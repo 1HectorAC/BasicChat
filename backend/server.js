@@ -16,7 +16,24 @@ app.get("/", (req, res) => {
 
 io.on('connection', socket => {
     console.log("user connected: " + socket.id);
-    
+
+    socket.on('createRoom', room => {
+        console.log("Room created: " + room + " by: " + socket.id);
+        // add check if room already exits, shouldnt
+        socket.join(room);
+    })
+    socket.on('joinRoom', ({room, name}) => {
+        console.log("Room joined: " + room + " by: " + socket.id);
+        // add check if room already exits, should
+        socket.join(room);
+        socket.to(room).emit("userJoined", name);
+    })
+
+
+    io.on('ice-candidate', ({room, candidate}) => {
+        console.log("ice candidate called");
+        socket.to(room).emit("ice-candidate", candidate);
+    });
 
     io.on('disconnect', () => {
         console.log("user disconnected: " + socket.id);
