@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import videoPlaceholder from '../assets/noVideo.jpg'
 
-import {socket} from '../components/socket'
+import { socket } from '../components/socket'
 
 function Create() {
     const [room, setRoom] = useState();
@@ -9,68 +9,80 @@ function Create() {
     const [remoteUserName, setRemoteUserName] = useState("other");
     const [error, setError] = useState();
     const [onVideoState, setOnVideoState] = useState(false);
-    const [localIsPaused, setLocalIsPaused] = useState(true);
-    const [localIsMute, setLocalIsMute] = useState(true);
-    const [remoteIsMute, setRemoteIsMute] = useState(true);
-
-    const pc = useRef(new RTCPeerConnection({
-        iceServers: [{urls: "stun:stun.l.google.com:19302"}]
-    }));
+    const [localIsPaused, setLocalIsPaused] = useState(false);
+    const [localIsMute, setLocalIsMute] = useState(false);
+    const [remoteIsMute, setRemoteIsMute] = useState(false);
 
     const localVideo = useRef();
     const remoteVideo = useRef();
 
-    function onClickCreate() {
+    const pc = useRef(new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    }));
+
+
+    async function onClickCreate() {
         if (!room || !userName) {
             setError("All fields must be entered");
             return;
         }
-        const stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+        // need to render video html before setting localVideo
+        setOnVideoState(true);
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         stream.getTracks().forEach(track => {
             pc.current.addTrack(track, stream);
-        })
+        });
         localVideo.current.srcObject = stream;
+
         socket.connect();
 
         // give socket time to connect before emitting join
         setTimeout(() => {
-            socket.emit("join", room);
+            socket.emit("createRoom", room);
         }, 100);
 
         setError("");
-        setOnVideoState(true);
     }
 
     useEffect(() => {
         pc.current.onicecandidate = e => {
-            if(e.candidate)
-                socket.emit("ice-candidate", {room, candidate: e.candidate})
+            if (e.candidate)
+                socket.emit("ice-candidate", { room, candidate: e.candidate })
         };
 
         // called when media track arrives
         pc.current.ontrack = e => {
-            remoteVideo.current.srcObject = e.stream[0];
+            remoteVideo.current.srcObject = e.streams[0];
         }
 
-        socket.on("userJoined", async name => {
-            setRemoteUserName(name);
+        socket.on("userJoined", async ({otherUser}) => {
+            setRemoteUserName(otherUser);
             // create offer, send name too
-        })
+            const offer = await pc.current.createOffer();
+            await pc.current.setLocalDescription(offer);
+            socket.emit("offer", { offer, room, userName });
+        });
+
+        socket.on("answer", async answer => {
+            await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
+        });
+
 
         socket.on("ice-candidate", async candidate => {
-            try{
+            try {
                 await pc.current.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch(err){
+            } catch (err) {
                 console.error(err);
             }
         });
 
-        return ()=> {
+        return () => {
             socket.off("userJoined");
+            socket.off("answer");
             socket.off("ice-candidate");
         }
 
-    },[]);
+    }, [room, userName, remoteUserName]);
 
     return (
         <div>
@@ -78,10 +90,28 @@ function Create() {
             {!onVideoState ?
                 <div>
                     <label htmlFor="userName">userName</label>
-                    <input name="userName" id="userName" onChange={e => setRoom(e.target.value)} />
+                    <input name="userName" id="userName" onChange={e => setUserName(e.target.value)} />
                     <br />
                     <label htmlFor="room">room</label>
-                    <input name="room" id="room" onChange={e => setUserName(e.target.value)} />
+                    <input name="room" id="room" onChange={e => setRoom(e.target.value)} />
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                            name="localIsPaused"
+                            checked={localIsPaused}
+                            onChange={e => setLocalIsPaused(e.target.checked)}
+                        />
+                        Turn off video
+                    </label>
+                    <label>
+                        <input type="checkbox"
+                            name="localIsMuted"
+                            checked={localIsMute}
+                            onChange={e => setLocalIsMute(e.target.checked)}
+                        />
+                        Mute video
+                    </label>
+
                     <br />
                     <button onClick={onClickCreate}>Create</button>
                     {error && <p className="errorMessage">{error}</p>}

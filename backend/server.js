@@ -22,11 +22,20 @@ io.on('connection', socket => {
         // add check if room already exits, shouldnt
         socket.join(room);
     })
-    socket.on('joinRoom', ({room, name}) => {
-        console.log("Room joined: " + room + " by: " + socket.id);
+    socket.on('joinRoom', ({room, userName}) => {
+        console.log("Room joined: " + room + " by: " + userName + " " + socket.id);
         // add check if room already exits, should
         socket.join(room);
-        socket.to(room).emit("userJoined", name);
+        socket.to(room).emit("userJoined", {otherUser:userName});
+    })
+    socket.on('offer', ({offer, room, userName}) => {
+        console.log("offer received, " + userName);
+        socket.to(room).emit("offer", {offer, otherUser:userName});
+    })
+
+    socket.on('answer', ({room, answer}) => {
+        console.log("answer received")
+        socket.to(room).emit('answer', answer);
     })
 
 
