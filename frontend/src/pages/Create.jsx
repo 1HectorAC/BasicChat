@@ -4,8 +4,8 @@ import videoPlaceholder from '../assets/noVideo.jpg'
 import { socket } from '../components/socket'
 
 function Create() {
-    const [room, setRoom] = useState();
-    const [userName, setUserName] = useState();
+    const [room, setRoom] = useState("111");
+    const [userName, setUserName] = useState("test1");
     const [remoteUserName, setRemoteUserName] = useState("other");
     const [error, setError] = useState();
     const [onVideoState, setOnVideoState] = useState(false);
@@ -20,7 +20,6 @@ function Create() {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     }));
 
-
     async function onClickCreate() {
         if (!room || !userName) {
             setError("All fields must be entered");
@@ -34,12 +33,14 @@ function Create() {
         });
         localVideo.current.srcObject = stream;
 
-        socket.connect();
-
-        // give socket time to connect before emitting join
-        setTimeout(() => {
+        if (!socket.connected) {
+            socket.connect();
+            socket.once("connect", () => {
+                socket.emit("createRoom", room);
+            });
+        } else {
             socket.emit("createRoom", room);
-        }, 100);
+        }
 
         setError("");
     }
@@ -51,9 +52,11 @@ function Create() {
         };
 
         // called when media track arrives
+        /*
         pc.current.ontrack = e => {
             remoteVideo.current.srcObject = e.streams[0];
         }
+        */
 
         socket.on("userJoined", async ({otherUser}) => {
             setRemoteUserName(otherUser);
@@ -64,9 +67,9 @@ function Create() {
         });
 
         socket.on("answer", async answer => {
+            console.log("answer is received")
             await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
         });
-
 
         socket.on("ice-candidate", async candidate => {
             try {
@@ -90,10 +93,10 @@ function Create() {
             {!onVideoState ?
                 <div>
                     <label htmlFor="userName">userName</label>
-                    <input name="userName" id="userName" onChange={e => setUserName(e.target.value)} />
+                    <input name="userName" value={userName} id="userName" onChange={e => setUserName(e.target.value)} />
                     <br />
                     <label htmlFor="room">room</label>
-                    <input name="room" id="room" onChange={e => setRoom(e.target.value)} />
+                    <input name="room" value={room} id="room" onChange={e => setRoom(e.target.value)} />
                     <br />
                     <label>
                         <input type="checkbox"
@@ -120,11 +123,11 @@ function Create() {
                 <div style={{ display: 'flex', gap: 20 }}>
                     <div>
                         <p>me</p>
-                        <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300}></video>
+                        <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300} />
                     </div>
                     <div>
                         <p>{remoteUserName}</p>
-                        <video ref={remoteVideo} poster={videoPlaceholder} autoPlay playsInline width={400}></video>
+                        <video ref={remoteVideo} poster={videoPlaceholder} autoPlay playsInline width={400} />
 
                     </div>
                     <div>

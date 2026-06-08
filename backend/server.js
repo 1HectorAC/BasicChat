@@ -38,13 +38,12 @@ io.on('connection', socket => {
         socket.to(room).emit('answer', answer);
     })
 
-
-    io.on('ice-candidate', ({room, candidate}) => {
+    socket.on('ice-candidate', ({room, candidate}) => {
         console.log("ice candidate called");
         socket.to(room).emit("ice-candidate", candidate);
     });
 
-    io.on('disconnect', () => {
+    socket.on('disconnect', () => {
         console.log("user disconnected: " + socket.id);
     })
 })

@@ -4,8 +4,8 @@ import { socket } from "../components/socket";
 
 
 function Join() {
-    const [room, setRoom] = useState();
-    const [userName, setUserName] = useState();
+    const [room, setRoom] = useState("111");
+    const [userName, setUserName] = useState("test2");
     const [remoteUserName, setRemoteUserName] = useState("other");
     const [error, setError] = useState();
     const [onVideoState, setOnVideoState] = useState(false);
@@ -20,10 +20,10 @@ function Join() {
     const localVideo = useRef();
     const remoteVideo = useRef();
 
-
     async function onClickJoin() {
         if (!room || !userName) {
             setError("All fields must be entered");
+            return;
         }
 
         // need to render video html before setting localVideo
@@ -36,11 +36,14 @@ function Join() {
         localVideo.current.srcObject = stream;
 
         */
-        socket.connect();
-
-        setTimeout(() => {
+        if (!socket.connected) {
+            socket.connect();
+            socket.once("connect", () => {
+                socket.emit("joinRoom", { room, userName });
+            });
+        } else {
             socket.emit("joinRoom", { room, userName });
-        }, 100);
+        }
 
         setError("");
     }
@@ -84,10 +87,10 @@ function Join() {
             {!onVideoState ?
                 <div>
                     <label htmlFor="userName">userName</label>
-                    <input name="userName" id="userName" onChange={e => setUserName(e.target.value)} />
+                    <input name="userName" value={userName} id="userName" onChange={e => setUserName(e.target.value)} />
                     <br />
                     <label htmlFor="room">room</label>
-                    <input name="room" id="room" onChange={e => setRoom(e.target.value)} />
+                    <input name="room" value={room} id="room" onChange={e => setRoom(e.target.value)} />
                     <br />
                     <label>
                         <input type="checkbox"
@@ -114,11 +117,11 @@ function Join() {
                 <div style={{ display: 'flex', gap: 20 }}>
                     <div>
                         <p>me</p>
-                        <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300}></video>
+                        <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300} />
                     </div>
                     <div>
                         <p>{remoteUserName}</p>
-                        <video ref={remoteVideo} poster={videoPlaceholder} autoPlay playsInline width={400}></video>
+                        <video ref={remoteVideo} poster={videoPlaceholder} autoPlay playsInline width={400} />
                     </div>
                     <div>
                         <button>{localIsPaused ? "Unpause Video" : "Pause Video"}</button>
