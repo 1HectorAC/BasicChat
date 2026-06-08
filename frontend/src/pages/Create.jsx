@@ -9,9 +9,10 @@ function Create() {
     const [remoteUserName, setRemoteUserName] = useState("other");
     const [error, setError] = useState();
     const [onVideoState, setOnVideoState] = useState(false);
-    const [localIsPaused, setLocalIsPaused] = useState(false);
-    const [localIsMute, setLocalIsMute] = useState(false);
-    const [remoteIsMute, setRemoteIsMute] = useState(false);
+    const [isVideoOn, setIsVideoOn] = useState(true);
+    const [isAudioOn, setIsAudioOn] = useState(true);
+    const [isRemoteAudioOn, setIsRemoteAudioOn] = useState(true);
+    const [stream, setStream] = useState(null);
 
     const localVideo = useRef();
     const remoteVideo = useRef();
@@ -27,11 +28,13 @@ function Create() {
         }
         // need to render video html before setting localVideo
         setOnVideoState(true);
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        stream.getTracks().forEach(track => {
-            pc.current.addTrack(track, stream);
+        const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setStream(media);
+
+        media.getTracks().forEach(track => {
+            pc.current.addTrack(track, media);
         });
-        localVideo.current.srcObject = stream;
+        localVideo.current.srcObject = media;
 
         if (!socket.connected) {
             socket.connect();
@@ -52,13 +55,11 @@ function Create() {
         };
 
         // called when media track arrives
-        /*
         pc.current.ontrack = e => {
             remoteVideo.current.srcObject = e.streams[0];
         }
-        */
 
-        socket.on("userJoined", async ({otherUser}) => {
+        socket.on("userJoined", async ({ otherUser }) => {
             setRemoteUserName(otherUser);
             // create offer, send name too
             const offer = await pc.current.createOffer();
@@ -67,7 +68,6 @@ function Create() {
         });
 
         socket.on("answer", async answer => {
-            console.log("answer is received")
             await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
         });
 
@@ -87,6 +87,17 @@ function Create() {
 
     }, [room, userName, remoteUserName]);
 
+    const toggleVideo = () => {
+        const videoTrack = stream.getVideoTracks()[0];
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoOn(videoTrack.enabled);
+    }
+    const toggleAudio = () => {
+        const audioTrack = stream.getAudioTracks()[0];
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioOn(audioTrack.enabled);
+    }
+
     return (
         <div>
             <h1>Host video Session</h1>
@@ -100,19 +111,19 @@ function Create() {
                     <br />
                     <label>
                         <input type="checkbox"
-                            name="localIsPaused"
-                            checked={localIsPaused}
-                            onChange={e => setLocalIsPaused(e.target.checked)}
+                            name="isVideoOn"
+                            checked={isVideoOn}
+                            onChange={e => setIsVideoOn(e.target.checked)}
                         />
-                        Turn off video
+                        Turn On video
                     </label>
                     <label>
                         <input type="checkbox"
                             name="localIsMuted"
-                            checked={localIsMute}
-                            onChange={e => setLocalIsMute(e.target.checked)}
+                            checked={isAudioOn}
+                            onChange={e => setIsAudioOn(e.target.checked)}
                         />
-                        Mute video
+                        Turn On Audio
                     </label>
 
                     <br />
@@ -122,25 +133,21 @@ function Create() {
                 :
                 <div style={{ display: 'flex', gap: 20 }}>
                     <div>
-                        <p>me</p>
+                        <p>{userName} (me)</p>
                         <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300} />
                     </div>
                     <div>
                         <p>{remoteUserName}</p>
                         <video ref={remoteVideo} poster={videoPlaceholder} autoPlay playsInline width={400} />
-
                     </div>
                     <div>
-                        <button>{localIsPaused ? "Unpause Video" : "Pause Video"}</button>
-                        <button>{localIsMute ? "Unmute" : "Mute"}</button>
-                        <button>{remoteIsMute ? "Unmute Other" : "Mute Other"}</button>
+                        <button onClick={toggleVideo}>{isVideoOn ? "Pause Video" : "Unpause Video"}</button>
+                        <button onClick={toggleAudio}>{isAudioOn ? "Mute" : "Unmute"}</button>
+                        <button>{isRemoteAudioOn ? "Mute Other" : "Unmute Other"}</button>
                         <button>Disconnect</button>
-
                     </div>
-
                 </div>
             }
-
 
         </div>
     )

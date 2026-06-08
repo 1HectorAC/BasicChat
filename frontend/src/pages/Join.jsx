@@ -9,9 +9,11 @@ function Join() {
     const [remoteUserName, setRemoteUserName] = useState("other");
     const [error, setError] = useState();
     const [onVideoState, setOnVideoState] = useState(false);
-    const [localIsPaused, setLocalIsPaused] = useState(false);
-    const [localIsMute, setLocalIsMute] = useState(false);
-    const [remoteIsMute, setRemoteIsMute] = useState(false);
+    const [isVideoOn, setIsVideoOn] = useState(true);
+    const [isAudioOn, setIsAudioOn] = useState(true);
+    const [isRemoteAudioOn, setIsRemoteAudioOn] = useState(true);
+    const [stream, setStream] = useState(null);
+    const remoteAudioTrack= useRef();
 
     const pc = useRef(new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
@@ -29,11 +31,12 @@ function Join() {
         // need to render video html before setting localVideo
         setOnVideoState(true);
         /*
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        stream.getTracks().forEach(track => {
-            pc.current.addTrack(track, stream);
+        const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setStream(media);
+        media.getTracks().forEach(track => {
+            pc.current.addTrack(track, media);
         });
-        localVideo.current.srcObject = stream;
+        localVideo.current.srcObject = media;
 
         */
         if (!socket.connected) {
@@ -56,7 +59,10 @@ function Join() {
 
         // called when media track arrives
         pc.current.ontrack = e => {
-            remoteVideo.current.srcObject = e.streams[0];
+            const remoteStream = e.streams[0];
+            remoteVideo.current.srcObject = remoteStream;
+            const remoteAudioT = remoteStream.getAudioTracks()[0];
+            remoteAudioTrack.current = remoteAudioT;
         };
 
         socket.on("ice-candidate", async candidate => {
@@ -69,6 +75,7 @@ function Join() {
 
         socket.on("offer", async ({ offer, otherUser }) => {
             setRemoteUserName(otherUser);
+            //onicecandidate called with offer
             await pc.current.setRemoteDescription(new RTCSessionDescription(offer));
             const answer = await pc.current.createAnswer();
             await pc.current.setLocalDescription(answer);
@@ -80,7 +87,15 @@ function Join() {
             socket.off("ice-candidate");
         }
 
-    }, [room, userName])
+    }, [room, userName]);
+
+    const toggleRemoteAudio = () => {
+        const track = remoteAudioTrack.current;
+        if(track){
+            track.enabled = !track.enabled;
+            setIsRemoteAudioOn(track.enabled);
+        }
+    }
     return (
         <div>
             <h1>Join video Session</h1>
@@ -94,19 +109,19 @@ function Join() {
                     <br />
                     <label>
                         <input type="checkbox"
-                            name="localIsPaused"
-                            checked={localIsPaused}
-                            onChange={e => setLocalIsPaused(e.target.checked)}
+                            name="isVideoOn"
+                            checked={isVideoOn}
+                            onChange={e => setIsVideoOn(e.target.checked)}
                         />
-                        Turn off video
+                        Turn On video
                     </label>
                     <label>
                         <input type="checkbox"
                             name="localIsMuted"
-                            checked={localIsMute}
-                            onChange={e => setLocalIsMute(e.target.checked)}
+                            checked={isAudioOn}
+                            onChange={e => setIsAudioOn(e.target.checked)}
                         />
-                        Mute video
+                        Turn On Audio
                     </label>
 
                     <br />
@@ -116,7 +131,7 @@ function Join() {
                 :
                 <div style={{ display: 'flex', gap: 20 }}>
                     <div>
-                        <p>me</p>
+                        <p>{ userName } (me)</p>
                         <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300} />
                     </div>
                     <div>
@@ -124,9 +139,9 @@ function Join() {
                         <video ref={remoteVideo} poster={videoPlaceholder} autoPlay playsInline width={400} />
                     </div>
                     <div>
-                        <button>{localIsPaused ? "Unpause Video" : "Pause Video"}</button>
-                        <button>{localIsMute ? "Unmute" : "Mute"}</button>
-                        <button>{remoteIsMute ? "Unmute Other" : "Mute Other"}</button>
+                        <button>{isVideoOn ? "Pause Video" : "unPause Video"}</button>
+                        <button>{isAudioOn ? "Mute" : "Unmute"}</button>
+                        <button onClick={toggleRemoteAudio}>{isRemoteAudioOn ? "Mute Other" : "Unmute Other"}</button>
                         <button>Disconnect</button>
                     </div>
                 </div>
