@@ -26,15 +26,6 @@ function Create() {
             setError("All fields must be entered");
             return;
         }
-        // need to render video html before setting localVideo
-        setOnVideoState(true);
-        const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        setStream(media);
-
-        media.getTracks().forEach(track => {
-            pc.current.addTrack(track, media);
-        });
-        localVideo.current.srcObject = media;
 
         if (!socket.connected) {
             socket.connect();
@@ -44,8 +35,6 @@ function Create() {
         } else {
             socket.emit("createRoom", room);
         }
-
-        setError("");
     }
 
     useEffect(() => {
@@ -78,14 +67,32 @@ function Create() {
                 console.error(err);
             }
         });
+        socket.on("response", async ({ type }) => {
+            if (type === "roomCreated") {
+                // need to render video html before setting localVideo
+                setOnVideoState(true);
+                const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                
+                media.getTracks().forEach(track => {
+                    pc.current.addTrack(track, media);
+                });
+                localVideo.current.srcObject = media;
+                setStream(media);
+                setError("");
+            }
+            else if (type === "roomNotCreated") {
+                setError("Error: room is already taken.")
+            }
+        })
 
         return () => {
             socket.off("userJoined");
             socket.off("answer");
+            socket.off("response");
             socket.off("ice-candidate");
         }
 
-    }, [room, userName, remoteUserName]);
+    }, [room, userName, remoteUserName, error]);
 
     const toggleVideo = () => {
         const videoTrack = stream.getVideoTracks()[0];
@@ -96,6 +103,25 @@ function Create() {
         const audioTrack = stream.getAudioTracks()[0];
         audioTrack.enabled = !audioTrack.enabled;
         setIsAudioOn(audioTrack.enabled);
+    }
+
+    const disconnectCall = () => {
+        if (stream)
+            stream.getTracks().forEach(track => track.stop());
+        if (pc.current) {
+            pc.current.close();
+        }
+
+        setStream(null);
+        setRoom("");
+        setUserName("");
+        setRemoteUserName("");
+        setIsVideoOn(true);
+        setIsAudioOn(true);
+        setIsRemoteAudioOn(true);
+        setOnVideoState(false);
+
+        // maybe send exit signal
     }
 
     return (
@@ -144,7 +170,7 @@ function Create() {
                         <button onClick={toggleVideo}>{isVideoOn ? "Pause Video" : "Unpause Video"}</button>
                         <button onClick={toggleAudio}>{isAudioOn ? "Mute" : "Unmute"}</button>
                         <button>{isRemoteAudioOn ? "Mute Other" : "Unmute Other"}</button>
-                        <button>Disconnect</button>
+                        <button onClick={disconnectCall}>Disconnect</button>
                     </div>
                 </div>
             }

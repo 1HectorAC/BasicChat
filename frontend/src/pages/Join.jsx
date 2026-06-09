@@ -96,6 +96,25 @@ function Join() {
             setIsRemoteAudioOn(track.enabled);
         }
     }
+
+    const disconnectCall = () => {
+        if (stream)
+            stream.getTracks().forEach(track => track.stop());
+        if (pc.current) {
+            pc.current.close();
+        }
+
+        setStream(null);
+        setRoom("");
+        setUserName("");
+        setRemoteUserName("");
+        setIsVideoOn(true);
+        setIsAudioOn(true);
+        setIsRemoteAudioOn(true);
+        setOnVideoState(false);
+
+        // maybe send exit signal
+    }
     return (
         <div>
             <h1>Join video Session</h1>
@@ -142,7 +161,7 @@ function Join() {
                         <button>{isVideoOn ? "Pause Video" : "unPause Video"}</button>
                         <button>{isAudioOn ? "Mute" : "Unmute"}</button>
                         <button onClick={toggleRemoteAudio}>{isRemoteAudioOn ? "Mute Other" : "Unmute Other"}</button>
-                        <button>Disconnect</button>
+                        <button onClick={disconnectCall}>Disconnect</button>
                     </div>
                 </div>
             }

@@ -10,6 +10,11 @@ const io = new Server(server, {cors: {origin:"*", methods:['GET']}});
 
 const PORT = process.env.PORT ?? "5000";
 
+function isRoomOccupied(roomName){
+    const room = io.sockets.adapter.rooms.get(roomName);
+    return room && room.size > 0;
+}
+
 app.get("/", (req, res) => {
     res.send("Test is working");
 })
@@ -19,8 +24,15 @@ io.on('connection', socket => {
 
     socket.on('createRoom', room => {
         console.log("Room created: " + room + " by: " + socket.id);
-        // add check if room already exits, shouldnt
-        socket.join(room);
+        if(isRoomOccupied(room)){
+            console.log(`Room create error, ${room} already exits`);
+            socket.emit("response", {type:"roomNotCreated"});
+        }
+        else{
+            socket.join(room);
+            socket.emit("response", {type:"roomCreated"});
+        }
+        
     })
     socket.on('joinRoom', ({room, userName}) => {
         console.log("Room joined: " + room + " by: " + userName + " " + socket.id);
