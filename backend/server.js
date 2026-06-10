@@ -25,21 +25,39 @@ io.on('connection', socket => {
     socket.on('createRoom', room => {
         console.log("Room created: " + room + " by: " + socket.id);
         if(isRoomOccupied(room)){
-            console.log(`Room create error, ${room} already exits`);
+            console.log(`Error: cant create room: ${room}, room already exits`);
             socket.emit("response", {type:"roomNotCreated"});
         }
         else{
             socket.join(room);
             socket.emit("response", {type:"roomCreated"});
+        } 
+    })
+    socket.on('joinRoom', room => {
+        console.log(`Room joined, room: ${room} by ${socket.id}`);
+        if(!isRoomOccupied(room)){
+            console.log(`Error: cant join room: ${room}, room doesnt exits.`)
+            socket.emit("response", {type:"roomNotJoined"});
         }
-        
+        else{
+            socket.join(room);
+            socket.emit("response", {type:"roomJoined"});
+
+        }
     })
-    socket.on('joinRoom', ({room, userName}) => {
-        console.log("Room joined: " + room + " by: " + userName + " " + socket.id);
-        // add check if room already exits, should
-        socket.join(room);
+    socket.on('userJoinedNotify', ({room, userName}) =>{
+        console.log("Notify user joined to Room creator, room:" + room);
         socket.to(room).emit("userJoined", {otherUser:userName});
+
     })
+
+    socket.on('leaveRoom', room => {
+        console.log(`Leaving room: ${room}. User: ${socket.id}`)
+        socket.to(room).emit("response", {type: "leaveRoom"});
+        socket.leave(room);
+        // maybe to emit to other user in room. force disconnect by other too
+    })
+
     socket.on('offer', ({offer, room, userName}) => {
         console.log("offer received, " + userName);
         socket.to(room).emit("offer", {offer, otherUser:userName});

@@ -72,7 +72,7 @@ function Create() {
                 // need to render video html before setting localVideo
                 setOnVideoState(true);
                 const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                
+
                 media.getTracks().forEach(track => {
                     pc.current.addTrack(track, media);
                 });
@@ -81,7 +81,10 @@ function Create() {
                 setError("");
             }
             else if (type === "roomNotCreated") {
-                setError("Error: room is already taken.")
+                setError("Error: Room is already taken.")
+            }
+            else if (type === "leaveRoom") {
+                disconnectCall();
             }
         })
 
@@ -110,6 +113,10 @@ function Create() {
             stream.getTracks().forEach(track => track.stop());
         if (pc.current) {
             pc.current.close();
+            pc.current = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+
         }
 
         setStream(null);
@@ -121,7 +128,7 @@ function Create() {
         setIsRemoteAudioOn(true);
         setOnVideoState(false);
 
-        // maybe send exit signal
+        socket.emit("leaveRoom", room);
     }
 
     return (

@@ -13,7 +13,7 @@ function Join() {
     const [isAudioOn, setIsAudioOn] = useState(true);
     const [isRemoteAudioOn, setIsRemoteAudioOn] = useState(true);
     const [stream, setStream] = useState(null);
-    const remoteAudioTrack= useRef();
+    const remoteAudioTrack = useRef();
 
     const pc = useRef(new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
@@ -28,24 +28,13 @@ function Join() {
             return;
         }
 
-        // need to render video html before setting localVideo
-        setOnVideoState(true);
-        /*
-        const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        setStream(media);
-        media.getTracks().forEach(track => {
-            pc.current.addTrack(track, media);
-        });
-        localVideo.current.srcObject = media;
-
-        */
         if (!socket.connected) {
             socket.connect();
             socket.once("connect", () => {
-                socket.emit("joinRoom", { room, userName });
+                socket.emit("joinRoom", room );
             });
         } else {
-            socket.emit("joinRoom", { room, userName });
+            socket.emit("joinRoom", room );
         }
 
         setError("");
@@ -82,8 +71,36 @@ function Join() {
             socket.emit("answer", { room, answer });
         })
 
+        socket.on("response", async ({ type }) => {
+            if (type === "roomJoined") {
+                // need to render video html before setting localVideo
+                setOnVideoState(true);
+                /*
+                const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                setStream(media);
+                media.getTracks().forEach(track => {
+                    pc.current.addTrack(track, media);
+                });
+                localVideo.current.srcObject = media;
+                setStream(media);
+        
+                */
+               socket.emit("userJoinedNotify", ({room, userName}));
+
+                setError("");
+
+            }
+            else if (type === "roomNotJoined") {
+                setError("Error: room does not exits.")
+            }
+            else if (type === "leaveRoom"){
+                disconnectCall();
+            }
+        })
+
         return () => {
             socket.off("offer");
+            socket.off("response");
             socket.off("ice-candidate");
         }
 
@@ -91,7 +108,7 @@ function Join() {
 
     const toggleRemoteAudio = () => {
         const track = remoteAudioTrack.current;
-        if(track){
+        if (track) {
             track.enabled = !track.enabled;
             setIsRemoteAudioOn(track.enabled);
         }
@@ -102,6 +119,9 @@ function Join() {
             stream.getTracks().forEach(track => track.stop());
         if (pc.current) {
             pc.current.close();
+            pc.current = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
         }
 
         setStream(null);
@@ -113,7 +133,7 @@ function Join() {
         setIsRemoteAudioOn(true);
         setOnVideoState(false);
 
-        // maybe send exit signal
+        socket.emit("leaveRoom", room);
     }
     return (
         <div>
@@ -150,7 +170,7 @@ function Join() {
                 :
                 <div style={{ display: 'flex', gap: 20 }}>
                     <div>
-                        <p>{ userName } (me)</p>
+                        <p>{userName} (me)</p>
                         <video ref={localVideo} poster={videoPlaceholder} autoPlay playsInline muted width={300} />
                     </div>
                     <div>
