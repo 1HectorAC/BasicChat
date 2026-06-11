@@ -8,6 +8,9 @@ import Join from './pages/Join'
 function App() {
   return (
     <>
+      <div className='headerPanel'>
+        <h1>BasicChat</h1>
+      </div>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />

@@ -1,0 +1,38 @@
+:root {
+    --main-color: rgb(52, 63, 86);
+    --second-color: rgb(122, 140, 178);
+    --btn-color: rgb(76, 106, 171);
+    --btn-color2: rgb(58, 95, 161);
+}
+
+.headerPanel {
+    background-color: var(--second-color);
+    padding: 3px;
+    text-align: center;
+    text-shadow: 2px 2px 5px #000000;
+}
+
+.btnVersion1 {
+    text-decoration: none;
+    background-color: var(--btn-color);
+    color: white;
+    font-size: 20px;
+    padding: 10px;
+    border-radius: 5px;
+    display: inline-block;
+    border: var(--btn-color);
+}
+
+.btnVersion1:hover {
+    background-color: rgb(211, 217, 241);
+    color: var(--btn-color);
+}
+.formSection{
+    padding-bottom: 10px;
+}
+
+.labelStyle1 {
+    display: inline-block;
+    width: 100px;
+}
+

@@ -1,11 +1,19 @@
 import { Link } from "react-router-dom";
-function Home(){
-    return(
-        <div>
-            <h1>BasicChat Home Page</h1>
-            <Link to="/Create">Create</Link>
+function Home() {
+    return (
+        <div style={{ textAlign: "center" }}>
+            <h2>Home Page</h2>
             <br/>
-            <Link to="/Join">Join</Link>
+            <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
+                <Link to="/Create" className="btnVersion1">
+                    Create
+                </Link>
+                <p>|</p>
+                <Link to="/Join" className="btnVersion1">
+                    Join
+                </Link>
+            </div>
+
         </div>
     )
 }
