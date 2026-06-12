@@ -137,15 +137,19 @@ function Join() {
     }
     return (
         <div>
-            <h1>Join video Session</h1>
+            <h2 style={{textAlign:"center"}}>Join video Session</h2>
             {!onVideoState ?
-                <div>
-                    <label htmlFor="userName">userName</label>
-                    <input name="userName" value={userName} id="userName" onChange={e => setUserName(e.target.value)} />
-                    <br />
-                    <label htmlFor="room">room</label>
-                    <input name="room" value={room} id="room" onChange={e => setRoom(e.target.value)} />
-                    <br />
+                <div style={{ textAlign: "center" }}>
+                    <div className="formSection">
+                        <label className="labelStyle1" htmlFor="userName">UserName </label>
+                        <input className="inputStyle1" name="userName" value={userName} id="userName" onChange={e => setUserName(e.target.value)} />
+                    </div>
+                    <div className="formSection">
+                        <label className="labelStyle1" htmlFor="room">Room </label>
+                        <input className="inputStyle1" name="room" value={room} id="room" onChange={e => setRoom(e.target.value)} />
+
+                    </div>
+                    <div className="formSection">
                     <label>
                         <input type="checkbox"
                             name="isVideoOn"
@@ -162,9 +166,9 @@ function Join() {
                         />
                         Turn On Audio
                     </label>
+                    </div>
 
-                    <br />
-                    <button onClick={onClickJoin}>Join</button>
+                    <button className="btnVersion1" onClick={onClickJoin}>Join</button>
                     {error && <p className="errorMessage">{error}</p>}
                 </div>
                 :

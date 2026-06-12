@@ -51,3 +51,7 @@
     border-color: #007BFF; 
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
+
+.errorMessage{
+    color:rgb(255, 72, 72);
+}
