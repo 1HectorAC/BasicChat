@@ -138,12 +138,11 @@ function Create() {
                 <div style={{ textAlign: "center" }}>
                     <div className="formSection">
                         <label className="labelStyle1" htmlFor="userName">UserName </label>
-                        <input name="userName" value={userName} id="userName" onChange={e => setUserName(e.target.value)} />
-
+                        <input className="inputStyle1" name="userName" value={userName} id="userName" onChange={e => setUserName(e.target.value)} />
                     </div>
                     <div className="formSection">
                         <label className="labelStyle1" htmlFor="room">Room </label>
-                        <input name="room" value={room} id="room" onChange={e => setRoom(e.target.value)} />
+                        <input className="inputStyle1" name="room" value={room} id="room" onChange={e => setRoom(e.target.value)} />
 
                     </div>
                     <div className="formSection">

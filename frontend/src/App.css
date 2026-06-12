@@ -21,6 +21,7 @@
     border-radius: 5px;
     display: inline-block;
     border: var(--btn-color);
+    font-family: "Gugi", sans-serif;
 }
 
 .btnVersion1:hover {
@@ -36,3 +37,17 @@
     width: 100px;
 }
 
+.inputStyle1{
+    font-size: 18px;
+    font-family: "Gugi", sans-serif;
+    outline: none;
+    border-radius: 5px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    padding: 4px;
+    border: 2px solid var(--btn-color);
+}
+
+.inputStyle1:focus{
+    border-color: #007BFF; 
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
